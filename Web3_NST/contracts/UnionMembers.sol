@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-error Stakeholders__NowOwner();
-error Stakeholders__NotForSale();
-error Stakeholders__InsufficientFunds();
+// Error
+error UnionMembers__NowOwner();
+error UnionMembers__NotForSale();
+error UnionMembers__InsufficientFunds();
 
-contract Stakeholders {
+contract UnionMembers {
     /* Type declarations */
     // 销售状态
     enum stateForSale {
@@ -13,13 +14,13 @@ contract Stakeholders {
         IsForSale
     }
 
-    // Stakeholders 信息
-    struct stakeholderInfo {
-        string name;            // 利益相关者的称呼
-        address payable payee;  // 收款地址
-        string asset;           // 指向资产的元数据，可以是作品链接，运营商地址，JSON 链接等
-        bool approval;          // approval 为项目许可，默认为 false,所有利益相关者需要手动改为 true 才能使项目实际开始。
-        // 此外一旦利益相关者有任何质疑，都可以手动撤销许可，以阻止链上信息的进一步改变
+    // UnionMembers 信息
+    struct unionMemberInfo {
+        string name;            // 工会成员的称呼
+        address payee;          // 收款地址
+        string asset;           // 指向资产的元数据，可以是作品链接，论文地址，运营商地址，JSON 链接等
+        bool approval;          // approval 为成员许可，默认为 false,所有工会成员需要手动改为 true 才能使项目实际开始。
+        // 此外一旦工会成员有任何质疑，都可以手动撤销许可，以阻止链上信息的进一步改变
     }
 
     /* State Variables */
@@ -27,34 +28,36 @@ contract Stakeholders {
     address private s_owner;
     stateForSale private saleState;
     uint256 private salePrice;
-    stakeholderInfo private personalInfo;
+    unionMemberInfo private personalInfo;
 
     // 构造函数
     constructor(uint256 _price) {
-        i_creator = msg.sender;                 // 固定的初始拥有者为合约部署者
+        i_creator = msg.sender;                 // 固定创建者为合约部署者
         s_owner = msg.sender;                   // 初始拥有者为合约部署者
+        personalInfo.payee = msg.sender;        // 默认个人信息中的收款地址是合约拥有者的地址
         saleState = stateForSale.NotForSale;    // 初始状态为不出售
         salePrice = _price;                     // 设置一个初始的定价
     }
 
     // 修饰器 onlyOwner
     modifier onlyOwner() {
-        if(msg.sender != s_owner){revert Stakeholders__NowOwner();}
+        if(msg.sender != s_owner){revert UnionMembers__NowOwner();}
         _;
     }
 
     // 将 owner 身份交易给其他人
     function purchaseOwnership() public payable {
         
-        if(saleState == stateForSale.NotForSale){revert Stakeholders__NotForSale();}
-        if(msg.value < salePrice){revert Stakeholders__InsufficientFunds();}
+        if(saleState == stateForSale.NotForSale){revert UnionMembers__NotForSale();}
+        if(msg.value < salePrice){revert UnionMembers__InsufficientFunds();}
 
         address oldOwner = s_owner;
         s_owner = msg.sender;
         payable(oldOwner).transfer(msg.value);
 
-        saleState = stateForSale.NotForSale;   // 购买后设置为 NotForSale 状态
-        salePrice = msg.value;
+        personalInfo.payee = msg.sender         // 交易后将个人信息的收款地址切换为新的拥有者
+        saleState = stateForSale.NotForSale;    // 购买后设置为 NotForSale 状态
+        salePrice = msg.value;                  // 设置 salePrice 为最新的交易价格
     }
 
     /* Getter Functions */
@@ -78,8 +81,8 @@ contract Stakeholders {
         return salePrice;
     }
 
-    // 查看利益相关者信息
-    function getStakeholderInfo() public view returns(stakeholderInfo memory) {
+    // 查看工会成员信息
+    function getUnionMemberInfo() public view returns(unionMemberInfo memory) {
         return personalInfo;
     }
 
@@ -100,9 +103,9 @@ contract Stakeholders {
         saleState = stateForSale.NotForSale;
     }
 
-    // 设置重要的利益相关者信息
-    function setStakeholderInfo(string memory _name, address payable _payee, string memory _asset, bool _approval) public onlyOwner {
-        personalInfo = stakeholderInfo({
+    // 设置重要的工会成员信息
+    function setUnionMemberInfo(string memory _name, address payable _payee, string memory _asset, bool _approval) public onlyOwner {
+        personalInfo = unionMemberInfo({
             name: _name,
             payee: _payee,
             asset: _asset,
