@@ -17,7 +17,7 @@ contract UnionMembers {
     // UnionMembers 信息
     struct unionMemberInfo {
         string name;            // 工会成员的称呼
-        address payee;          // 收款地址
+        address payeeAddress;   // 收款地址
         string asset;           // 指向资产的元数据，可以是作品链接，论文地址，运营商地址，JSON 链接等
         bool approval;          // 默认为 false，每当有重大决策需要投票时，所有工会成员需要手动改为 true 才能使决策落地。
         bool veto;              // 默认为 false，一旦工会成员有对日常事务存在质疑，就可以发起 veto，以阻止链上信息的进一步改变
@@ -34,7 +34,7 @@ contract UnionMembers {
     constructor(uint256 _price) {
         i_creator = msg.sender;                 // 固定创建者为合约部署者
         s_owner = msg.sender;                   // 初始拥有者为合约部署者
-        personalInfo.payee = msg.sender;        // 默认个人信息中的收款地址是合约拥有者的地址
+        personalInfo.payeeAddress = msg.sender; // 默认个人信息中的收款地址是合约拥有者的地址
         saleState = stateForSale.NotForSale;    // 初始状态为不出售
         salePrice = _price;                     // 设置一个初始的定价
     }
@@ -55,9 +55,14 @@ contract UnionMembers {
         s_owner = msg.sender;
         payable(oldOwner).transfer(msg.value);
 
-        personalInfo.payee = msg.sender;        // 交易后将个人信息的收款地址切换为新的拥有者
+        personalInfo.payeeAddress = msg.sender; // 交易后将个人信息的收款地址切换为新的拥有者
         saleState = stateForSale.NotForSale;    // 购买后设置为 NotForSale 状态
         salePrice = msg.value;                  // 设置 salePrice 为最新的交易价格
+    }
+
+    // 如果 payee 地址出现意外，则款项会支付到本合约的地址，因此可能需要提款
+    function withdraw(address _payeeAddress) public payable onlyOwner {
+        payable(_payeeAddress).transfer(address(this).balance);
     }
 
     /* Getter Functions */
@@ -104,10 +109,10 @@ contract UnionMembers {
     }
 
     // 设置重要的工会成员信息
-    function setUnionMemberInfo(string memory _name, address payable _payee, string memory _asset) public onlyOwner {
+    function setUnionMemberInfo(string memory _name, address _payeeAddress, string memory _asset) public onlyOwner {
         personalInfo = unionMemberInfo({
             name: _name,
-            payee: _payee,
+            payeeAddress: _payeeAddress,
             asset: _asset,
             approval: false,
             veto: false

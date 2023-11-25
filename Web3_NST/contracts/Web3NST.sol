@@ -21,7 +21,7 @@ error Web3NST__PayToOperator();
 // 定义一个与 UnionMembers 和 OtherStakeholders 合约相同的 struct
 struct unionMemberInfo {
     string name;
-    address payable payee;
+    address payable payeeAddress;
     string asset;
     bool approval;
     bool veto;
@@ -29,7 +29,7 @@ struct unionMemberInfo {
 
 struct otherStakeholdersInfo {
     string name;
-    address payable payee;
+    address payable payeeAddress;
     string asset;
 }
 
@@ -54,11 +54,12 @@ contract Web3NST {
 
     /* State Variables */
     address private operatorAddress;
+    address private operatorPayeeAddress;
     uint256 private serviceFee;
     mapping (StakeholderType => uint256) private stakes;
 
     address[] private unionMembers;
-    mapping (address => IUnionMembers) unionMembersInterface;
+    mapping (address => IUnionMembers) private unionMembersInterface;
     uint256 private totalUnionStakes;                           // 初始总份额为 0，每当为用户进行一个 NST 服务就会增加 1，在运营商数据库中统计
     mapping (address => uint256) private unionMemberStakes;     // 记录每位成员贡献的份额数量
 
@@ -70,10 +71,11 @@ contract Web3NST {
 
     // 构造函数
     constructor(uint256 _serviceFee, address _otherStakeholdersAddress) {
-        operatorAddress = msg.sender;   // 服务运营商负责部署本合约
-        serviceFee = _serviceFee;       // 确定一个初始的服务费
-        minimumWithdrawalAmount = 100;  // 给定一个初始的最小提取金额
-        distributionFraction = 10;      // 给定一个分账比例分数
+        operatorAddress = msg.sender;       // 服务运营商负责部署本合约
+        operatorPayeeAddress = msg.sender;  // 默认运营商收款地址为部署者地址
+        serviceFee = _serviceFee;           // 确定一个初始的服务费
+        minimumWithdrawalAmount = 100;      // 给定一个初始的最小提取金额
+        distributionFraction = 10;          // 给定一个分账比例分数
         otherStakeholdersAddress = _otherStakeholdersAddress;
         otherStakeholdersInterface = IOtherStakeholders(_otherStakeholdersAddress);
         stakes[StakeholderType.Operator] = 7;           // Operator 拿 7/10
@@ -90,8 +92,16 @@ contract Web3NST {
 
     // 修饰器 unionApproval
     modifier unionApproval() {
-        for (uint256 i = 0; i < unionMembers.length; i++) {
+        for (uint i = 0; i < unionMembers.length; i++) {
             if(!retrieveUnionMemberInfo(unionMembers[i]).approval){revert Web3NST__UnionNotApproval();}
+        }
+        _;
+    }
+
+    // 修饰器 unionVeto
+    modifier unionVeto {
+        for (uint i = 0; i < unionMembers.length; i++) {
+            if(retrieveUnionMemberInfo(unionMembers[i]).veto){revert Web3NST__UnionNotApproval();}
         }
         _;
     }
@@ -107,28 +117,41 @@ contract Web3NST {
     }
 
     /* Withdraw */
-    function distributeFunds() public onlyOperator unionApproval {
+    function distributeFunds() public payable onlyOperator unionVeto {
+        // 暂时没有添加重入攻击防御
         uint256 distributedAmount  = address(this).balance;
+
         if(distributedAmount < minimumWithdrawalAmount){revert Web3NST__InsufficientFunds();}
         uint256 unionMembersAmount = distributedAmount * stakes[StakeholderType.UnionMember] / distributionFraction;
         uint256 otherStakeholdersAmount = distributedAmount * stakes[StakeholderType.OtherStakeholders] / distributionFraction;
         uint256 operatorAmount = distributedAmount * stakes[StakeholderType.OtherStakeholders] / distributionFraction;
 
-        for (uint256 i = 0; i < unionMembers.length; i++) {
+        for (uint i = 0; i < unionMembers.length; i++) {
             address unionMemberAddress = unionMembers[i];
-            address unionMemberPaymentAddress = retrieveUnionMemberInfo(unionMemberAddress).payee;
+            address unionMemberPaymentAddress = retrieveUnionMemberInfo(unionMemberAddress).payeeAddress;
             uint256 unionMemberStake = unionMemberStakes[unionMemberAddress];
 
             // 计算该成员应获得的款项
-            uint256 unionMemberpayment = unionMembersAmount * unionMemberStake / totalUnionStakes;
+            uint256 unionMemberPayment = unionMembersAmount * unionMemberStake / totalUnionStakes;
 
             // 向该成员发送资金
-            (bool PayToUnionMember, ) = payable(unionMemberPaymentAddress).call{value: unionMemberpayment}("");
+            (bool PayToUnionMember, ) = payable(unionMemberPaymentAddress).call{value: unionMemberPayment}("");
+            if(!PayToUnionMember) {
+                (bool PayToUnionMember, ) = payable(unionMemberAddress).call{value: unionMemberPayment}("");    // 如果此处打款失败，就把款项支付到成员的合约地址上
+            }
+            unionMemberStakes[unionMemberAddress] = 0;
         }
 
-        address otherStakeholdersPaymentAddress = retrieveOtherStakeholdersInfo().payee;
+        address otherStakeholdersPaymentAddress = retrieveOtherStakeholdersInfo().payeeAddress;
         (bool PayToOtherStakeholders, ) = payable(otherStakeholdersPaymentAddress).call{value: otherStakeholdersAmount}("");
-        (bool PayToOperator, ) = payable(operatorAddress).call{value: operatorAmount}("");
+        if(!PayToOtherStakeholders) {
+            (bool PayToOtherStakeholders, ) = payable(otherStakeholdersAddress).call{value: otherStakeholdersAmount}("");   // 如果此处打款失败，就把款项支付到 OtherStakeholders 合约地址上
+        }
+
+        (bool PayToOperator, ) = payable(operatorPayeeAddress).call{value: operatorAmount}("");
+        if(!PayToOperator) {
+            (bool PayToOperator, ) = payable(operatorAddress).call{value: operatorAmount}("");   // 如果此处打款失败，就把款项支付到运营商地址上
+        }
     }
 
     /* Getter */
@@ -156,6 +179,11 @@ contract Web3NST {
     // 设置当前服务费
     function setServiceFee(uint256 _serviceFee) public onlyOperator unionApproval {
         serviceFee = _serviceFee;
+    }
+
+    // 设置运营商收款地址
+    function setOperatorPayeeAddress(address _operatorPayeeAddress) public onlyOperator {
+        operatorPayeeAddress = _operatorPayeeAddress;
     }
 
     // 设置最低提款额度
