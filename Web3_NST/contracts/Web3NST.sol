@@ -14,6 +14,10 @@ error Web3NST__IncorrectAmount();
 error Web3NST__NotOperator();
 error Web3NST__UnionNotApproval();
 error Web3NST__InsufficientFunds();
+error Web3NST__PayToUnionMemberFailed();
+error Web3NST__PayToOtherStakeholders();
+error Web3NST__PayToOperator();
+
 
 // 定义一个与 UnionMembers 和 OtherStakeholders 合约相同的 struct
 struct unionMemberInfo {
@@ -21,9 +25,10 @@ struct unionMemberInfo {
     address payable payee;
     string asset;
     bool approval;
+    bool veto;
 }
 
-struct otherStakeholderInfo {
+struct otherStakeholdersInfo {
     string name;
     address payable payee;
     string asset;
@@ -36,7 +41,7 @@ interface IUnionMembers {
 }
 
 interface IOtherStakeholders {
-    function getOtherStakeholderInfo() external view returns (otherStakeholderInfo memory);
+    function getOtherStakeholdersInfo() external view returns (otherStakeholdersInfo memory);
 }
 
 contract Web3NST {
@@ -45,29 +50,36 @@ contract Web3NST {
     enum StakeholderType {
         Operator;
         UnionMember;
-        OtherStakeholder;
+        OtherStakeholders;
     }
 
     /* State Variables */
     address private operatorAddress;
     uint256 private serviceFee;
-    IUnionMembers[] private unionMemberInterfaces;
-    IOtherStakeholders[] private otherStakeholderInterfaces;
+    mapping (StakeholderType => uint256) private stakes;
+
+    address[] private unionMembers;
+    mapping (address => IUnionMembers) unionMembersInterface;
+    uint256 private totalUnionStakes;                           // 初始总份额为 0，每当为用户进行一个 NST 服务就会增加 1，在运营商数据库中统计
+    mapping (address => uint256) private unionMemberStakes;     // 记录每位成员贡献的份额数量
+
+    address private otherStakeholdersAddress;
+    IOtherStakeholders otherStakeholdersInterface;
+
     uint256 private distributionFraction;
-    mapping (StakeholderType => uint) private stakes;
-    mapping (address => uint) unionStakes;
-    mapping (address => uint) otherStakeholderStakes;
     uint256 private minimumWithdrawalAmount;
 
     // 构造函数
-    constructor(uint256 _serviceFee) {
+    constructor(uint256 _serviceFee, address _otherStakeholdersAddress) {
         operatorAddress = msg.sender;   // 服务运营商负责部署本合约
         serviceFee = _serviceFee;       // 确定一个初始的服务费
         minimumWithdrawalAmount = 100;  // 给定一个初始的最小提取金额
-        distributionFraction = 10;      // 定下一个分账比例分数
+        distributionFraction = 10;      // 给定一个分账比例分数
+        otherStakeholdersAddress = _otherStakeholdersAddress;
+        otherStakeholdersInterface = IOtherStakeholders(_otherStakeholdersAddress);
         stakes[StakeholderType.Operator] = 7;           // Operator 拿 7/10
         stakes[StakeholderType.UnionMember] = 2;        // UnionMember 拿 2/10
-        stakes[StakeholderType.OtherStakeholder] = 1;   // OtherStakeholder 拿 1/10
+        stakes[StakeholderType.OtherStakeholders] = 1;  // OtherStakeholders 拿 1/10
     }
 
     /* Modifier */
@@ -79,6 +91,9 @@ contract Web3NST {
 
     // 修饰器 unionApproval
     modifier unionApproval() {
+        for (uint256 i = 0; i < unionMembers.length; i++) {
+            if(!retrieveUnionMemberInfo(unionMembers[i]).approval){revert Web3NST__UnionNotApproval();}
+        }
         _;
     }
 
@@ -94,15 +109,26 @@ contract Web3NST {
 
     /* Withdraw */
     function distributeFunds() public onlyOperator unionApproval {
-        uint distributedAmount  = (address(this).balance / minimumWithdrawalAmount) * minimumWithdrawalAmount;
+        uint256 distributedAmount  = address(this).balance;
         if(distributedAmount < minimumWithdrawalAmount){revert Web3NST__InsufficientFunds();}
-        uint unionMembersAmount = distributedAmount * stakes[StakeholderType.UnionMember] / distributionFraction
-        uint otherStakeholdersAmount = distributedAmount * stakes[StakeholderType.OtherStakeholder] / distributionFraction
-        uint operatorAmount = distributedAmount * stakes[StakeholderType.OtherStakeholder] / distributionFraction
+        uint256 unionMembersAmount = distributedAmount * stakes[StakeholderType.UnionMember] / distributionFraction;
+        uint256 otherStakeholdersAmount = distributedAmount * stakes[StakeholderType.OtherStakeholders] / distributionFraction;
+        uint256 operatorAmount = distributedAmount * stakes[StakeholderType.OtherStakeholders] / distributionFraction;
 
-        // for (uint)
+        for (uint256 i = 0; i < unionMembers.length; i++) {
+            address unionMemberAddress = unionMembers[i];
+            address unionMemberPaymentAddress = retrieveUnionMemberInfo(unionMemberAddress).payee;
+            uint256 unionMemberStake = unionMemberStakes[unionMemberAddress];
 
+            // 计算该成员应获得的款项
+            uint256 unionMemberpayment = unionMembersAmount * unionMemberStake / totalUnionStakes;
 
+            // 向该成员发送资金
+            (bool PayToUnionMember) = payable(unionMemberpaymentAddress).call{value: unionMemberpayment}("");
+        }
+
+        address otherStakeholdersPaymentAddress = retrieveOtherStakeholdersInfo().payee;
+        (bool PayToOtherStakeholders) = payable(otherStakeholdersPaymentAddress).call{value: otherStakeholdersAmount}("");
         (bool PayToOperator, ) = payable(operatorAddress).call{value: operatorAmount}("");
     }
 
@@ -117,6 +143,16 @@ contract Web3NST {
         return minimumWithdrawalAmount;
     }
 
+    // 获取一位工会成员的信息
+    function retrieveUnionMemberInfo(address _unionMemberAddress) public view returns (unionMemberInfo memory) {
+        return unionMembersInterface[_unionMemberAddress].getUnionMemberInfo();
+    }
+
+    // 获取其他利益相关者的信息
+    function retrieveOtherStakeholdersInfo() public view returns (otherStakeholdersInfo memory) {
+        return otherStakeholdersInterface.getOtherStakeholdersInfo();
+    }
+
     /* Setter */
     // 设置当前服务费
     function setServiceFee(uint256 _serviceFee) public onlyOperator unionApproval {
@@ -128,17 +164,9 @@ contract Web3NST {
         minimumWithdrawalAmount = _minimumWithdrawalAmount
     }
 
-
-
-
-
-    // 添加一个其他利益相关者
-    function addOtherStakeholder(address _otherStakeholderAddress) public onlyOperator {
-        otherStakeholderInterfaces.push(IOtherStakeholders(_otherStakeholderAddress));
-    }
-
-    // 获取一个其他利益相关者的信息
-    function retrieveOtherStakeholderInfo(uint256 _index) public view returns (otherStakeholderInfo memory) {
-        return otherStakeholderInterfaces[_index].getOtherStakeholderInfo();
+    // 添加一位工会成员的合约接口
+    function addUnionMember(address _unionMemberAddress) public onlyOperator {
+        unionMembers.push(_unionMemberAddress);
+        unionMembersInterface[_unionMemberAddress] = IUnionMembers(_unionMemberAddress);
     }
 }
