@@ -18,7 +18,6 @@ error Web3NST__PayToUnionMemberFailed();
 error Web3NST__PayToOtherStakeholders();
 error Web3NST__PayToOperator();
 
-
 // 定义一个与 UnionMembers 和 OtherStakeholders 合约相同的 struct
 struct unionMemberInfo {
     string name;
@@ -48,9 +47,9 @@ contract Web3NST {
     /* Type declarations */
     // 总的身份类型有三种
     enum StakeholderType {
-        Operator;
-        UnionMember;
-        OtherStakeholders;
+        Operator,
+        UnionMember,
+        OtherStakeholders
     }
 
     /* State Variables */
@@ -85,7 +84,7 @@ contract Web3NST {
     /* Modifier */
     // 修饰器 onlyOperator
     modifier onlyOperator() {
-        if(msg.sender != s_owner){revert Web3NST__NotOperator();}
+        if(msg.sender != operatorAddress){revert Web3NST__NotOperator();}
         _;
     }
 
@@ -124,11 +123,11 @@ contract Web3NST {
             uint256 unionMemberpayment = unionMembersAmount * unionMemberStake / totalUnionStakes;
 
             // 向该成员发送资金
-            (bool PayToUnionMember) = payable(unionMemberpaymentAddress).call{value: unionMemberpayment}("");
+            (bool PayToUnionMember, ) = payable(unionMemberPaymentAddress).call{value: unionMemberpayment}("");
         }
 
         address otherStakeholdersPaymentAddress = retrieveOtherStakeholdersInfo().payee;
-        (bool PayToOtherStakeholders) = payable(otherStakeholdersPaymentAddress).call{value: otherStakeholdersAmount}("");
+        (bool PayToOtherStakeholders, ) = payable(otherStakeholdersPaymentAddress).call{value: otherStakeholdersAmount}("");
         (bool PayToOperator, ) = payable(operatorAddress).call{value: operatorAmount}("");
     }
 
@@ -161,7 +160,7 @@ contract Web3NST {
 
     // 设置最低提款额度
     function setMinimumWithdrawalAmount(uint256 _minimumWithdrawalAmount) public onlyOperator unionApproval {
-        minimumWithdrawalAmount = _minimumWithdrawalAmount
+        minimumWithdrawalAmount = _minimumWithdrawalAmount;
     }
 
     // 添加一位工会成员的合约接口

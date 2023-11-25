@@ -55,7 +55,7 @@ contract UnionMembers {
         s_owner = msg.sender;
         payable(oldOwner).transfer(msg.value);
 
-        personalInfo.payee = msg.sender         // 交易后将个人信息的收款地址切换为新的拥有者
+        personalInfo.payee = msg.sender;        // 交易后将个人信息的收款地址切换为新的拥有者
         saleState = stateForSale.NotForSale;    // 购买后设置为 NotForSale 状态
         salePrice = msg.value;                  // 设置 salePrice 为最新的交易价格
     }
@@ -121,6 +121,6 @@ contract UnionMembers {
 
     // 设置否决
     function switchVeto() public onlyOwner {
-        personalInfo.veto = !personalInfo.veto
+        personalInfo.veto = !personalInfo.veto;
     }
 }
