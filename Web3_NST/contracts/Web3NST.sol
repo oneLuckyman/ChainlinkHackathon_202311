@@ -13,6 +13,7 @@ pragma solidity ^0.8.19;
 error Web3NST__IncorrectAmount();
 error Web3NST__NotOperator();
 error Web3NST__UnionNotApproval();
+error Web3NST__UnionVeto();
 error Web3NST__InsufficientFunds();
 error Web3NST__PayToUnionMemberFailed();
 error Web3NST__PayToOtherStakeholders();
@@ -101,7 +102,7 @@ contract Web3NST {
     // 修饰器 unionVeto
     modifier unionVeto {
         for (uint i = 0; i < unionMembers.length; i++) {
-            if(retrieveUnionMemberInfo(unionMembers[i]).veto){revert Web3NST__UnionNotApproval();}
+            if(retrieveUnionMemberInfo(unionMembers[i]).veto){revert Web3NST__UnionVeto();}
         }
         _;
     }
@@ -137,7 +138,7 @@ contract Web3NST {
             // 向该成员发送资金
             (bool PayToUnionMember, ) = payable(unionMemberPaymentAddress).call{value: unionMemberPayment}("");
             if(!PayToUnionMember) {
-                (bool PayToUnionMember, ) = payable(unionMemberAddress).call{value: unionMemberPayment}("");    // 如果此处打款失败，就把款项支付到成员的合约地址上
+                (bool PayToUnionMemberContract, ) = payable(unionMemberAddress).call{value: unionMemberPayment}("");    // 如果此处打款失败，就把款项支付到成员的合约地址上
             }
             unionMemberStakes[unionMemberAddress] = 0;
         }
@@ -145,12 +146,12 @@ contract Web3NST {
         address otherStakeholdersPaymentAddress = retrieveOtherStakeholdersInfo().payeeAddress;
         (bool PayToOtherStakeholders, ) = payable(otherStakeholdersPaymentAddress).call{value: otherStakeholdersAmount}("");
         if(!PayToOtherStakeholders) {
-            (bool PayToOtherStakeholders, ) = payable(otherStakeholdersAddress).call{value: otherStakeholdersAmount}("");   // 如果此处打款失败，就把款项支付到 OtherStakeholders 合约地址上
+            (bool PayToOtherStakeholdersContract, ) = payable(otherStakeholdersAddress).call{value: otherStakeholdersAmount}("");   // 如果此处打款失败，就把款项支付到 OtherStakeholders 合约地址上
         }
 
-        (bool PayToOperator, ) = payable(operatorPayeeAddress).call{value: operatorAmount}("");
+        (bool PayToOperatorContract, ) = payable(operatorPayeeAddress).call{value: operatorAmount}("");
         if(!PayToOperator) {
-            (bool PayToOperator, ) = payable(operatorAddress).call{value: operatorAmount}("");   // 如果此处打款失败，就把款项支付到运营商地址上
+            (bool PayToOperatorOwner, ) = payable(operatorAddress).call{value: operatorAmount}("");   // 如果此处打款失败，就把款项支付到运营商地址上
         }
     }
 
