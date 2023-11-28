@@ -14,6 +14,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
         address owner,
         address automationRegistry
     );
+    error UnexpectedRequestID(bytes32 requestId);
 
     /* Type declarations */
     // 总的身份类型有三种
@@ -32,7 +33,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     uint256 private totalUnionStakes;
     mapping (address => uint256) private unionMemberStakes;
     address private otherStakeholdersAddress;
-    mapping (address => string) metadata;
+    mapping (address => string) private metadata;
 
     uint256 private distributionFraction;
     uint256 private minimumWithdrawalAmount;
@@ -65,6 +66,48 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
         _;
     }
 
+    // Functions
+    event Response(bytes32 indexed requestId, bytes response, bytes err);
+
+    function updateRequest(
+        bytes memory _request,
+        uint64 _subscriptionId,
+        uint32 _gasLimit,
+        bytes32 _donID
+    ) external onlyOperator {
+        request = _request;
+        subscriptionId = _subscriptionId;
+        gasLimit = _gasLimit;
+        donID = _donID;
+    }
+
+    function sendRequestCBOR()
+        external
+        onlyAllowed
+        returns (bytes32 requestId)
+    {
+        s_lastRequestId = _sendRequest(
+            request,
+            subscriptionId,
+            gasLimit,
+            donID
+        );
+        return s_lastRequestId;
+    }
+
+    function fulfillRequest(
+        bytes32 requestId,
+        bytes memory response,
+        bytes memory err
+    ) internal override {
+        if (s_lastRequestId != requestId) {
+            revert UnexpectedRequestID(requestId);
+        }
+        s_lastResponse = response;
+        s_lastError = err;
+        emit Response(requestId, s_lastResponse, s_lastError);
+    }
+
     /* Setter */
     // 设置 upkeepContract
     function setAutomationCronContract(
@@ -78,7 +121,6 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
         unionMembers.push(_unionMemberAddress);
         unionMemberStakes[_unionMemberAddress] = 0;
     }
-
 
     /* Payment */
     // 通知运营商服务器的事件
