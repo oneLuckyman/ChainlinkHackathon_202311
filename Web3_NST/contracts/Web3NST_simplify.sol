@@ -110,6 +110,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
 
     /* Setter */
     // 设置 upkeepContract
+    // 每次更新周期添加一就行
     function setAutomationCronContract(
         address _upkeepContract
     ) external onlyOwner {
@@ -141,9 +142,4 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     ) external onlyOwner {
         upkeepContract = _upkeepContract;
     }
-
-    // 可能需要退而求其次，进行一些模拟，定期从其他合约中读取数据
-    // checkUpkeep
-
-    // performUpkeep
 }
