@@ -69,18 +69,8 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     // Functions
     event Response(bytes32 indexed requestId, bytes response, bytes err);
 
-    function updateRequest(
-        bytes memory _request,
-        uint64 _subscriptionId,
-        uint32 _gasLimit,
-        bytes32 _donID
-    ) external onlyOperator {
-        request = _request;
-        subscriptionId = _subscriptionId;
-        gasLimit = _gasLimit;
-        donID = _donID;
-    }
-
+    // 发送一个预编码的 CBOR 请求
+    // ？这是什么意思
     function sendRequestCBOR()
         external
         onlyAllowed
@@ -95,6 +85,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
         return s_lastRequestId;
     }
 
+    // 存储最近一次响应返回的结果
     function fulfillRequest(
         bytes32 requestId,
         bytes memory response,
@@ -109,12 +100,25 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     }
 
     /* Setter */
-    // 设置 upkeepContract
+    // 设置 upkeepContract 这是 onlyAllowed 的授权之一
     // 每次更新周期添加一就行
     function setAutomationCronContract(
         address _upkeepContract
     ) external onlyOwner {
         upkeepContract = _upkeepContract;
+    }
+
+    // 配置请求的详细信息参数
+    function updateRequest(
+        bytes memory _request,
+        uint64 _subscriptionId,
+        uint32 _gasLimit,
+        bytes32 _donID
+    ) external onlyOperator {
+        request = _request;
+        subscriptionId = _subscriptionId;
+        gasLimit = _gasLimit;
+        donID = _donID;
     }
 
     // 添加一个 UnionMember
@@ -135,11 +139,4 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
 
     // 发钱
     function distributeFunds() public payable onlyOperator {}
-
-    // 设置 upkeepContract
-    function setAutomationCronContract(
-        address _upkeepContract
-    ) external onlyOwner {
-        upkeepContract = _upkeepContract;
-    }
 }
