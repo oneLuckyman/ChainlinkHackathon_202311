@@ -70,7 +70,6 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     event Response(bytes32 indexed requestId, bytes response, bytes err);
 
     // 发送一个预编码的 CBOR 请求
-    // ？这是什么意思
     function sendRequestCBOR()
         external
         onlyAllowed
