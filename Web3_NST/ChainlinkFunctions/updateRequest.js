@@ -1,15 +1,13 @@
 const fs = require("fs");
 const path = require("path");
 const {
-  SecretsManager,
   simulateScript,
-  buildRequestCBOR,
   ReturnType,
   decodeResult,
   Location,
   CodeLanguage,
 } = require("@chainlink/functions-toolkit");
-const automatedFunctionsConsumerAbi = require("automatedFunctions.json");   // 合约的 ABI 
+const automatedFunctionsConsumerAbi = require("./automatedFunctions.json");   // 合约的 ABI 
 const ethers = require("ethers");
 require("@chainlink/env-enc").config();
 
@@ -21,10 +19,6 @@ const updateRequestMumbai = async () => {
   // hardcoded for Polygon Mumbai
   const routerAddress = "0x6E2dc0F9DB014aE19888F539E59285D2Ea04244C";
   const donId = "fun-polygon-mumbai-1";
-  const gatewayUrls = [
-    "https://01.functions-gateway.testnet.chain.link/",
-    "https://02.functions-gateway.testnet.chain.link/"
-  ];
   const explorerUrl = "https://mumbai.polygonscan.com";
 
   // Initialize functions settings
@@ -33,7 +27,6 @@ const updateRequestMumbai = async () => {
     .toString();
 
   const args = [];
-  const expirationTimeMinutes = 600;
   const gasLimit = 300000;
 
   // Initialize ethers signer and provider to interact with the contracts onchain
@@ -90,14 +83,18 @@ const updateRequestMumbai = async () => {
     signer
   );
 
-  // Actual transaction call
-  const transaction = await functionsConsumer.sendRequest(
-    source, // source
-    "0x", // user hosted secrets - encryptedSecretsUrls - empty in this example
-    0, // don hosted secrets - slot ID - empty in this example
-    0, // don hosted secrets - version - empty in this example
-    args,
-    [], // bytesArgs - arguments can be encoded off-chain to bytes.
+  const functionsRequestBytesHexString = buildRequestCBOR({
+    codeLocation: Location.Inline, // Location of the source code - Only Inline is supported at the moment
+    codeLanguage: CodeLanguage.JavaScript, // Code language - Only JavaScript is supported at the moment
+    secretsLocation: Location.DONHosted, // Location of the encrypted secrets - DONHosted in this example
+    source: source, // soure code
+    args: args,
+    bytesArgs: [], // bytesArgs - arguments can be encoded off-chain to bytes.
+  });
+
+  // Update request settings
+  const transaction = await automatedFunctionsConsumer.updateRequest(
+    functionsRequestBytesHexString,
     subscriptionId,
     gasLimit,
     ethers.utils.formatBytes32String(donId) // jobId is bytes32 representation of donId

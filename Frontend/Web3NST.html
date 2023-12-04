@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <title>Neural Style Transfer</title>
+</head>
+<body>
+    <nav class="container-fluid">
+        <ul>
+            <li><strong>Neural Style Transfer</strong></li>
+        </ul>
+        <ul>
+            <li><a href="#">Home</a></li>
+            <li><a href="#">About</a></li>
+            <li><a href="#" role="button">Contact</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="grid">
+            <section>
+                <hgroup>
+                    <h2>Upload Your Image</h2>
+                    <h3>Step 1: Upload Base Image</h3>
+                </hgroup>
+                <p>Upload your base image to apply the style transfer.</p>
+                <input type="file" id="baseImage" name="baseImage" accept="image/*">
+                <h3>Step 2: Choose Style Reference</h3>
+                <p>Select a predefined style to apply to your image.</p>
+                <select id="styleReference" name="styleReference">
+                    <option value="style1">Style 1</option>
+                    <option value="style2">Style 2</option>
+                    <option value="style3">Style 3</option>
+                    <option value="style4">Style 4</option>
+                </select>
+                <button type="submit">Submit</button>
+            </section>
+        </div>
+    </main>
+    <footer class="container">
+        <small><a href="#">Privacy Policy</a> • <a href="#">Terms of Service</a></small>
+    </footer>
+</body>
+</html>
