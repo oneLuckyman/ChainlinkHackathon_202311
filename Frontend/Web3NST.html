@@ -25,7 +25,10 @@
                     <h3>Step 1: Upload Base Image</h3>
                 </hgroup>
                 <p>Upload your base image to apply the style transfer.</p>
-                <input type="file" id="baseImage" name="baseImage" accept="image/*">
+                <form action="http://localhost:3000/upload" method="post" enctype="multipart/form-data">
+                    <input type="file" id="baseImage" name="image" accept="image/*">
+                    <button type="submit">Upload Image</button>
+                </form>                
                 <h3>Step 2: Choose Style Reference</h3>
                 <p>Select a predefined style to apply to your image.</p>
                 <select id="styleReference" name="styleReference">
