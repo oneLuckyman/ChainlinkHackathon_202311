@@ -21,16 +21,9 @@ app.use((req, res, next) => {
     next();
 });
 
-// Upload endpoint
-// app.post('/upload', upload.single('image'), (req, res) => {
-//     res.json({ message: 'File uploaded successfully.', filePath: req.file.path });
-// });
-
 app.post('/upload', upload.single('image'), (req, res) => {
-    // 重定向到主页
-    res.redirect('http://127.0.0.1:5500/Frontend/Web3NST.html');
+    res.json({ message: 'File uploaded successfully.', filePath: req.file.path });
 });
-
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);

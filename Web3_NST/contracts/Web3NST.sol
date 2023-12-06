@@ -125,7 +125,7 @@ contract Web3NST {
         if(distributedAmount < minimumWithdrawalAmount){revert Web3NST__InsufficientFunds();}
         uint256 unionMembersAmount = distributedAmount * stakes[StakeholderType.UnionMember] / distributionFraction;
         uint256 otherStakeholdersAmount = distributedAmount * stakes[StakeholderType.OtherStakeholders] / distributionFraction;
-        uint256 operatorAmount = distributedAmount * stakes[StakeholderType.OtherStakeholders] / distributionFraction;
+        uint256 operatorAmount = distributedAmount * stakes[StakeholderType.Operator] / distributionFraction;
 
         for (uint i = 0; i < unionMembers.length; i++) {
             address unionMemberAddress = unionMembers[i];

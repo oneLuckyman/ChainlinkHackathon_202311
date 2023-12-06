@@ -25,10 +25,11 @@
                     <h3>Step 1: Upload Base Image</h3>
                 </hgroup>
                 <p>Upload your base image to apply the style transfer.</p>
-                <form action="http://localhost:3000/upload" method="post" enctype="multipart/form-data">
+                <form id="uploadForm" action="http://localhost:3000/upload" method="post" enctype="multipart/form-data">
                     <input type="file" id="baseImage" name="image" accept="image/*">
                     <button type="submit">Upload Image</button>
-                </form>                
+                </form>
+                <p id="uploadStatus"></p> <!-- 新增：用于显示上传状态 -->                              
                 <h3>Step 2: Choose Style Reference</h3>
                 <p>Select a predefined style to apply to your image.</p>
                 <select id="styleReference" name="styleReference">
@@ -44,5 +45,31 @@
     <footer class="container">
         <small><a href="#">Privacy Policy</a> • <a href="#">Terms of Service</a></small>
     </footer>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // 阻止表单的默认提交行为
+    
+            var formData = new FormData(this); // 创建 FormData 对象
+            var statusElement = document.getElementById('uploadStatus'); // 获取状态显示元素
+    
+            // 使用 AJAX 发送请求
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', this.action, true);
+    
+            // 请求完成后的处理
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    // 显示持续的成功消息
+                    statusElement.innerHTML = 'Upload successful!';
+                } else {
+                    // 显示持续的失败消息
+                    statusElement.innerHTML = 'Upload failed!';
+                }
+            };
+    
+            // 发送表单数据
+            xhr.send(formData);
+        });
+    </script>    
 </body>
 </html>
