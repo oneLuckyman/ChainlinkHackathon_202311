@@ -54,6 +54,10 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     uint256 private distributionFraction;
     uint256 private minimumWithdrawalAmount;
 
+    // 用于防御重入攻击的状态变量
+    bool private isDistributing = false;
+
+
     // 构造函数
     constructor(
         address router, uint256 _serviceFee, address _otherStakeholdersAddress
@@ -156,6 +160,10 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
 
     /* Withdraw */
     function distributeFunds() public payable onlyOperator {
+        // 重入攻击防御逻辑
+        require(!isDistributing, "Distribution already in progress");
+        isDistributing = true;
+
         // 暂时没有添加重入攻击防御
         uint256 distributedAmount  = address(this).balance;
 
@@ -181,6 +189,9 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
 
         (bool PayToOtherStakeholders, ) = payable(otherStakeholdersAddress).call{value: otherStakeholdersAmount}("");
         (bool PayToOperatorContract, ) = payable(operatorAddress).call{value: operatorAmount}("");
+
+        // 重新设置分发状态
+        isDistributing = false;
     }
 
     /* Getter */
