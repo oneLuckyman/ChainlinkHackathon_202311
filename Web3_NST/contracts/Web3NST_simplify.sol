@@ -30,6 +30,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     // Error
     error Web3NST__NotOperator();
     error Web3NST__InsufficientFunds();
+    error Web3NST__IncorrectAmount();
 
     /* Type declarations */
     // 总的身份类型有三种
@@ -83,6 +84,28 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     }
 
     /* Chainlink Automation Functions */
+    // 设置 upkeepContract 这是 onlyAllowed 的授权之一
+    function setAutomationCronContract(
+        address _upkeepContract
+    ) external onlyOwner {
+        upkeepContract = _upkeepContract;
+    }
+
+    /* Chainlink Automation Functions */
+    // 配置请求的详细信息参数
+    function updateRequest(
+        bytes memory _request,
+        uint64 _subscriptionId,
+        uint32 _gasLimit,
+        bytes32 _donID
+    ) external onlyOwner {
+        request = _request;
+        subscriptionId = _subscriptionId;
+        gasLimit = _gasLimit;
+        donID = _donID;
+    }
+
+    /* Chainlink Automation Functions */
     // 发送一个预编码的 CBOR 请求
     function sendRequestCBOR()
         external
@@ -111,35 +134,14 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
         s_lastResponse = response;
         s_lastError = err;
         emit Response(requestId, s_lastResponse, s_lastError);
-    }
-
-    /* Setter */
-    /* Chainlink Automation Functions */
-    // 设置 upkeepContract 这是 onlyAllowed 的授权之一
-    function setAutomationCronContract(
-        address _upkeepContract
-    ) external onlyOwner {
-        upkeepContract = _upkeepContract;
-    }
-
-    /* Chainlink Automation Functions */
-    // 配置请求的详细信息参数
-    function updateRequest(
-        bytes memory _request,
-        uint64 _subscriptionId,
-        uint32 _gasLimit,
-        bytes32 _donID
-    ) external onlyOperator {
-        request = _request;
-        subscriptionId = _subscriptionId;
-        gasLimit = _gasLimit;
-        donID = _donID;
-    }
-
-    // 添加一个 UnionMember
-    function addUnionMember(address _unionMemberAddress) public onlyOperator {
-        unionMembers.push(_unionMemberAddress);
-        unionMemberStakes[_unionMemberAddress] = 0;
+        // 添加响应处理逻辑
+        totalUnionStakes += uint256(bytes32(response));
+        uint256 remainder = totalUnionStakes % unionMembers.length;
+        uint256 distributedStake = totalUnionStakes / unionMembers.length;
+        unionMemberStakes[unionMembers[0]] += remainder;
+        for (uint i = 0; i < unionMembers.length; i++) {
+            unionMemberStakes[unionMembers[i]] += distributedStake;
+        }
     }
 
     /* Payment */
@@ -152,7 +154,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
         emit PaymentReceived(msg.sender, msg.value);
     }
 
-    // Withdraw
+    /* Withdraw */
     function distributeFunds() public payable onlyOperator {
         // 暂时没有添加重入攻击防御
         uint256 distributedAmount  = address(this).balance;
@@ -175,8 +177,58 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
             (bool PayToUnionMember, ) = payable(unionMemberAddress).call{value: unionMemberPayment}("");
             unionMemberStakes[unionMemberAddress] = 0;
         }
+        totalUnionStakes = 0;
 
         (bool PayToOtherStakeholders, ) = payable(otherStakeholdersAddress).call{value: otherStakeholdersAmount}("");
         (bool PayToOperatorContract, ) = payable(operatorAddress).call{value: operatorAmount}("");
+    }
+
+    /* Getter */
+    // 获取当前服务费价格
+    function getServiceFee() public view returns (uint256) {
+        return serviceFee;
+    }
+
+    // 获取当前最低提款额度
+    function getMinimumWithdrawalAmount() public view returns (uint256) {
+        return minimumWithdrawalAmount;
+    }
+
+    // 获取一位工会成员的份额信息
+    function retrieveUnionMemberStake(address _unionMemberAddress) public view returns (uint256) {
+        return unionMemberStakes[_unionMemberAddress];
+    }
+
+    // 获取当前的总份额信息
+    function retrieveTotalUnionStakes() public view returns (uint256) {
+        return totalUnionStakes;
+    }
+
+    /* Setter */
+    // 添加一个 UnionMember
+    function addUnionMember(address _unionMemberAddress) public onlyOperator {
+        unionMembers.push(_unionMemberAddress);
+        unionMemberStakes[_unionMemberAddress] = 0;
+    }
+
+    // 设置某个地址的 metadata
+    function setMetadata(address _address, string memory _metadata) public onlyOperator {
+        metadata[_address] = _metadata;
+    }
+
+    // 设置当前服务费
+    function setServiceFee(uint256 _serviceFee) public onlyOperator {
+        serviceFee = _serviceFee;
+    }
+
+    // 设置最低提款额度
+    function setMinimumWithdrawalAmount(uint256 _minimumWithdrawalAmount) public onlyOperator {
+        minimumWithdrawalAmount = _minimumWithdrawalAmount;
+    }
+
+    // 设置一个成员的份额，测试用
+    function setUnionMemberStake(address _unionMemberAddress, uint256 _stake) public onlyOperator {
+        unionMemberStakes[_unionMemberAddress] = _stake;
+        totalUnionStakes = totalUnionStakes + _stake;
     }
 }
