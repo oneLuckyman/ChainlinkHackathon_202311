@@ -2,24 +2,24 @@ const fs = require("fs");
 const path = require("path");
 const {
   simulateScript,
+  buildRequestCBOR,
   ReturnType,
   decodeResult,
   Location,
   CodeLanguage,
 } = require("@chainlink/functions-toolkit");
-const automatedFunctionsConsumerAbi = require("./automatedFunctions.json");   // 合约的 ABI 
+const automatedFunctionsConsumerAbi = require("./automatedFunctions.json");
 const ethers = require("ethers");
 require("@chainlink/env-enc").config();
 
-const consumerAddress = "0x"
-const subscriptionId = 1;
+const consumerAddress = "0x9Bc497d0beeD394a671b73F7E5A748C83d2a9A54"; // REPLACE this with your Functions consumer address
+const subscriptionId = 1834; // REPLACE this with your subscription ID
 
-// 更新请求函数主体，包含网络信息
 const updateRequestMumbai = async () => {
-  // hardcoded for Polygon Mumbai
-  const routerAddress = "0x6E2dc0F9DB014aE19888F539E59285D2Ea04244C";
-  const donId = "fun-polygon-mumbai-1";
-  const explorerUrl = "https://mumbai.polygonscan.com";
+  // hardcoded for Sepolia
+  const routerAddress = "0xb83E47C2bC239B3bf370bc41e1459A34b41238D0";
+  const donId = "fun-ethereum-sepolia-1";
+  const explorerUrl = "https://sepolia.etherscan.io";
 
   // Initialize functions settings
   const source = fs
@@ -36,7 +36,7 @@ const updateRequestMumbai = async () => {
       "private key not provided - check your environment variables"
     );
 
-  const rpcUrl = process.env.POLYGON_MUMBAI_RPC_URL; // fetch mumbai RPC URL
+  const rpcUrl = process.env.SEPOLIA_RPC_URL; // fetch mumbai RPC URL
 
   if (!rpcUrl)
     throw new Error(`rpcUrl not provided  - check your environment variables`);
@@ -54,7 +54,7 @@ const updateRequestMumbai = async () => {
     source: source,
     args: args,
     bytesArgs: [], // bytesArgs - arguments can be encoded off-chain to bytes.
-    secrets: {}, // no secrets in this example
+    secrets: {},
   });
 
   console.log("Simulation result", response);
@@ -76,10 +76,10 @@ const updateRequestMumbai = async () => {
   //////// MAKE REQUEST ////////
 
   console.log("\nMake request...");
-  
-  const functionsConsumer = new ethers.Contract(
+
+  const automatedFunctionsConsumer = new ethers.Contract(
     consumerAddress,
-    functionsConsumerAbi,
+    automatedFunctionsConsumerAbi,
     signer
   );
 

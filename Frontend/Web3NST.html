@@ -57,6 +57,7 @@
     <footer class="container">
         <small><a href="#">Privacy Policy</a> • <a href="#">Terms of Service</a></small>
     </footer>
+    <script src="./Web3NST_simplify_abi.js"></script>
     <script>
         // 上传图片的逻辑
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
@@ -122,9 +123,18 @@
         });
 
         function payWithMetaMask() {
-        // 向合约付款的代码
-        // 使用 Web3.js 调用您的智能合约方法
-        console.log("Paying with MetaMask...");
+            const contractAddress = '0x9Bc497d0beeD394a671b73F7E5A748C83d2a9A54'; // 合约地址
+            const contractABI = window.contractABI; // 合约ABI
+            const contract = new web3.eth.Contract(contractABI, contractAddress);
+            const paymentAmount = web3.utils.toWei('1', 'ether'); // 设置支付金额
+
+            contract.methods.receivePayment().send({ from: ethereum.selectedAddress, value: paymentAmount })
+            .then(receipt => {
+                console.log('Payment successful:', receipt);
+            })
+            .catch(err => {
+                console.error('Payment failed:', err);
+            });
         }
     </script>
 </body>

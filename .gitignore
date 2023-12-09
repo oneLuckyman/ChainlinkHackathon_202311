@@ -1,2 +1,7 @@
 NST_Model/*
 !NST_Model/VGG19_NST_keras.py
+Web3_NST/ChainlinkFunctions/automatedFunctions.json
+Web3_NST/ChainlinkFunctions/updateRequest.js.bak
+Frontend/Web3NST_simplify_abi.js
+Web3_NST/ChainlinkFunctions/package-lock.json
+Web3_NST/ChainlinkFunctions/package.json
