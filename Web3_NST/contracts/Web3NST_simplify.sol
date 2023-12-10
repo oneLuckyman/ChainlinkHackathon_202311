@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// Web3NST 的简化版本，为了方便演示，只有收钱发钱和记录的功能
+// Simplified version of Web3NST, for demonstration purposes only, with functionalities limited to receiving and distributing money, and recording transactions.
 
 import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/FunctionsClient.sol";
 import {ConfirmedOwner} from "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
@@ -33,7 +33,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     error Web3NST__IncorrectAmount();
 
     /* Type declarations */
-    // 总的身份类型有三种
+    // There are three main types of roles involved.
     enum StakeholderType {
         Operator,
         UnionMember,
@@ -54,11 +54,11 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     uint256 private distributionFraction;
     uint256 private minimumWithdrawalAmount;
 
-    // 用于防御重入攻击的状态变量
+    // State variable used to prevent reentrancy attacks.
     bool private isDistributing = false;
 
 
-    // 构造函数
+    // Constructor
     constructor(
         address router, uint256 _serviceFee, address _otherStakeholdersAddress
     ) FunctionsClient(router) ConfirmedOwner(msg.sender) {
@@ -73,14 +73,14 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     }
 
     /* Modifier */
-    // 修饰器 onlyOperator
+    // modifier onlyOperator
     modifier onlyOperator() {
         if(msg.sender != operatorAddress){revert Web3NST__NotOperator();}
         _;
     }
 
     /* Chainlink Automation Functions */
-    // 限定 owner 或 upkeepContract 才能调用
+    // Restricted to being called by the owner or the upkeepContract.
     modifier onlyAllowed() {
         if (msg.sender != owner() && msg.sender != upkeepContract)
             revert NotAllowedCaller(msg.sender, owner(), upkeepContract);
@@ -88,7 +88,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     }
 
     /* Chainlink Automation Functions */
-    // 设置 upkeepContract 这是 onlyAllowed 的授权之一
+    // Setting the upkeepContract, which is one of the authorizations for onlyAllowed.
     function setAutomationCronContract(
         address _upkeepContract
     ) external onlyOwner {
@@ -96,7 +96,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     }
 
     /* Chainlink Automation Functions */
-    // 配置请求的详细信息参数
+    // Configuring the detailed parameters of the request.
     function updateRequest(
         bytes memory _request,
         uint64 _subscriptionId,
@@ -110,7 +110,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     }
 
     /* Chainlink Automation Functions */
-    // 发送一个预编码的 CBOR 请求
+    // Sending a pre-encoded CBOR request.
     function sendRequestCBOR()
         external
         onlyAllowed
@@ -126,7 +126,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     }
 
     /* Chainlink Automation Functions */
-    // 存储最近一次响应返回的结果
+    // Storing the result returned from the most recent response.
     function fulfillRequest(
         bytes32 requestId,
         bytes memory response,
@@ -138,7 +138,7 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
         s_lastResponse = response;
         s_lastError = err;
         emit Response(requestId, s_lastResponse, s_lastError);
-        // 添加响应处理逻辑
+        // Adding logic to handle the response.
         totalUnionStakes += uint256(bytes32(response));
         uint256 remainder = uint256(bytes32(response)) % unionMembers.length;
         uint256 distributedStake = uint256(bytes32(response)) / unionMembers.length;
@@ -149,10 +149,10 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     }
 
     /* Payment */
-    // 通知运营商服务器的事件
+    // Event to notify the operator's server.
     event PaymentReceived(address sender, uint amount);
 
-    // 接收资金时触发事件
+    // Event triggered upon receiving funds.
     function receivePayment() external payable {
         if(msg.value != serviceFee){revert Web3NST__IncorrectAmount();}
         emit PaymentReceived(msg.sender, msg.value);
@@ -160,11 +160,10 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
 
     /* Withdraw */
     function distributeFunds() public payable onlyOperator {
-        // 重入攻击防御逻辑
+        // Logic to defend against reentrancy attacks.
         require(!isDistributing, "Distribution already in progress");
         isDistributing = true;
 
-        // 暂时没有添加重入攻击防御
         uint256 distributedAmount  = address(this).balance;
 
         if(distributedAmount < minimumWithdrawalAmount){revert Web3NST__InsufficientFunds();}
@@ -176,12 +175,12 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
             address unionMemberAddress = unionMembers[i];
             uint256 unionMemberStake = unionMemberStakes[unionMemberAddress];
 
-            // 计算该成员应获得的款项
+            // Calculating the amount due to each member.
             uint256 unionMemberPayment = unionMembersAmount * unionMemberStake / totalUnionStakes;
-            // 如果该成员这一次没有任何分账就跳到下一个成员的分账计算上
+            // If a member has no stake in the current distribution, skip to the next member's stake calculation.
             if (unionMemberPayment == 0) {continue;}
 
-            // 向该成员发送资金
+            // Sending funds to the member.
             (bool PayToUnionMember, ) = payable(unionMemberAddress).call{value: unionMemberPayment}("");
             unionMemberStakes[unionMemberAddress] = 0;
         }
@@ -190,59 +189,59 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
         (bool PayToOtherStakeholders, ) = payable(otherStakeholdersAddress).call{value: otherStakeholdersAmount}("");
         (bool PayToOperatorContract, ) = payable(operatorAddress).call{value: operatorAmount}("");
 
-        // 重新设置分发状态
+        // Resetting the distribution state.
         isDistributing = false;
     }
 
     /* Getter */
-    // 获取当前服务费价格
+    // get current service fee
     function getServiceFee() public view returns (uint256) {
         return serviceFee;
     }
 
-    // 获取当前最低提款额度
+    // get current MinimumWithdrawalAmount
     function getMinimumWithdrawalAmount() public view returns (uint256) {
         return minimumWithdrawalAmount;
     }
 
-    // 获取一位工会成员的份额信息
+    // retrieve a union member's stake
     function retrieveUnionMemberStake(address _unionMemberAddress) public view returns (uint256) {
         return unionMemberStakes[_unionMemberAddress];
     }
 
-    // 获取当前的总份额信息
+    // retrieve total stakes
     function retrieveTotalUnionStakes() public view returns (uint256) {
         return totalUnionStakes;
     }
 
-    // 获取一位成员的 matadata
+    // get a member's matadata
     // function getMetadata(address _address) public view returns (string memory) {
     //     return metadata[_address];
     // }
 
     /* Setter */
-    // 添加一个 UnionMember
+    // add a UnionMember
     function addUnionMember(address _unionMemberAddress) public onlyOperator {
         unionMembers.push(_unionMemberAddress);
         unionMemberStakes[_unionMemberAddress] = 0;
     }
 
-    // 设置某个地址的 metadata
+    // set metadata
     function setMetadata(address _address, string memory _metadata) public onlyOperator {
         metadata[_address] = _metadata;
     }
 
-    // 设置当前服务费
+    // set service fee
     function setServiceFee(uint256 _serviceFee) public onlyOperator {
         serviceFee = _serviceFee;
     }
 
-    // 设置最低提款额度
+    // set MinimumWithdrawalAmount
     function setMinimumWithdrawalAmount(uint256 _minimumWithdrawalAmount) public onlyOperator {
         minimumWithdrawalAmount = _minimumWithdrawalAmount;
     }
 
-    // 设置一个成员的份额，测试用
+    // set a UnionMember's stake，for test
     function setUnionMemberStake(address _unionMemberAddress, uint256 _stake) public onlyOperator {
         unionMemberStakes[_unionMemberAddress] = _stake;
         totalUnionStakes = totalUnionStakes + _stake;

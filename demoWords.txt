@@ -1,4 +1,30 @@
-大家好，这个视频是一个简短的项目说明视频，尽管我的项目没有完全完成，但我还是会在该视频中讲解一下我的大概想法。我想通过这个示例项目向大家展示，区块链技术有很大的潜力可以解决 AI 技术所遇到的一些利益分配和生产关系层面的问题。
+English Version：
+Hi everyone, this video is a brief project overview for Chainlink Hacathon November 2023. Although my project isn't fully complete, I'll still explain my general idea in this video. I wanted to show through this example project how blockchain technology has great potential in solving some of the issues related to profit distribution and production relations in AI technology.
+
+The core functionality of this project is to use the Neural Style Transfer, or NST algorithm, to transform user-uploaded images into the style of an art piece. The charging is done through on-chain smart contracts, and profits are distributed via these contracts.
+
+This is a simple implementation of NST, created with Python and TensorFlow. It also uses the VGG19 model, and the code is from the official Keras NST example.
+
+Now, let's look at my design. Here's a simple frontend page where you connect your wallet through this button in the top right corner. Then, follow the page's guide to upload the image you want to style transfer, and select an art piece participating in this project for the style. Clicking the Submit button will start the style transfer using the NST application we just saw.
+
+Since I didn't complete the backend server, this page can't fully function. In my plan, after the style transfer, if the user is satisfied, they could pay using MetaMask to get the generated image, or even create an ERC721 token. After payment, the operator's database would record which style of artwork was used and increase the corresponding owner's stake.
+
+This image is an NST conversion example, transforming a photo of Paris into Van Gogh's starry style, created with the NST example code we just saw.
+
+This contract is for collecting user payments. It's a simplified contract without the ability to mint NFTs. It only has functionalities for receiving and withdrawing funds, and interacting with Chainlink Functions to get stake information.
+
+The contract has integrated Chainlink Automation Functions to periodically retrieve each artwork owner's stake from the database API. The data I'm using now was sent by Chainlink Automation Functions not long ago. I've set the Upkeep to update every 2 hours. Since there's no backend server yet, I've simply written the Functions' source code to randomly generate a number from 0 to 3 to simulate database records.
+
+The contract is deployed by the operator of the frontend and backend servers. At deployment, an otherStakeholdersAddress is specified, representing those who don't directly participate in operations but should receive profits, like the proposer of the AI algorithm. I've provided a function for otherStakeholders to record their MetaData, adding the VGG19 model and NST algorithm paper's address as their MetaData.
+
+The contract also specifies different stakes for different roles and settings like service fees at deployment. Here, I set the operator to receive 70%, the artwork owner 20%, and others 10%.
+
+Now, let's assume someone has paid 1 ether for a style transfer. The operator can call the distributeFunds function to distribute money to everyone. In fact, I originally envisioned that artwork owners would have voting or veto rights on key decisions, like withdrawals, Chainlink Functions interactions, service fee settings, etc. Due to time constraints, I didn't fully implement this, but you can see some implementations in my GitHub repository.
+
+That's the end of the demo. This example only involves three roles: the operator, the artwork owner, and the algorithm proposer. In reality, AI technology involves many more stakeholders, like model trainers, data providers, and even the public, as many AI trainings use a lot of public data. Although this example project didn't involve complex situations, I believe my idea has been clearly expressed.
+
+中文版本：
+大家好，这个视频是一个简短的 2023 November Chainlink Hacathon 项目说明视频，尽管我的项目没有完全完成，但我还是会在该视频中讲解一下我的大概想法。我想通过这个示例项目向大家展示，区块链技术有很大的潜力可以解决 AI 技术所遇到的一些利益分配和生产关系层面的问题。
 
 这个项目的核心功能是使用神经风格迁移算法也就是 NST 算法，将用户上传的图片转换为某个艺术画作的风格。收费则使用的是链上智能合约，并且通过该合约完成利润的分配。
 
@@ -21,27 +47,3 @@
 现在我们假设有人已经付了 1 ether 进行了一次风格转换，运营商可以调用 distributeFunds 函数为所有人分钱。事实上，我原本设想风格画作的持有者在关键举措上是有投票权或否决权的，例如提款、Chainlink Functions 交互、服务费的设置等。由于时间有限我放弃了这方面的完整实现，但是在我的 GitHub 仓库中可以看到这方面的部分实现。
 
 演示到此结束了。这个示例中只涉及到了三种身份的人，运营商，风格画作持有者，以及算法提出者。事实上 AI 技术涉及到的利益人群还有很多，例如模型训练者，训练数据的提供者，甚至是公众本身也是相关利益群体，因为很多 AI 的训练使用了不少公开的数据。尽管这个示例项目没有涉及很复杂的情况，但我相信我的想法已经表达清楚了。
-
-Hi everyone, this video is a brief project overview. Although my project isn't fully complete, I'll still explain my general idea in this video. I wanted to show through this example project how blockchain technology has great potential in solving some of the issues related to profit distribution and production relations in AI technology.
-
-The core functionality of this project is to use the Neural Style Transfer, or NST algorithm, to transform user-uploaded images into the style of an art piece. The charging is done through on-chain smart contracts, and profits are distributed via these contracts.
-
-This is a simple implementation of NST, created with Python and TensorFlow. It also uses the VGG19 model, and the code is from the official Keras NST example.
-
-Now, let's look at my design. Here's a simple frontend page where you connect your wallet through the connectWallet button in the top right corner. Then, follow the page's guide to upload the image you want to style transfer, and select an art piece participating in this project for the style. Clicking the Submit button will start the style transfer using the NST application we just saw.
-
-Since I didn't complete the backend server, this page can't fully function. In my plan, after the style transfer, if the user is satisfied, they could pay using MetaMask to get the generated image, or even create an ERC721 token. After payment, the operator's database would record which style of artwork was used and increase the corresponding owner's stake.
-
-This image is an NST conversion example, transforming a photo of Paris into Van Gogh's starry style, created with the NST example code we just saw.
-
-This contract is for collecting user payments. It's a simplified contract without the ability to mint NFTs. It only has functionalities for receiving and withdrawing funds, and interacting with Chainlink Functions to get stake information.
-
-The contract has integrated Chainlink Automation Functions to periodically retrieve each artwork owner's stake from the database API. The data I'm using now was sent by Chainlink Automation Functions not long ago. I've set the Upkeep to update every 2 hours. Since there's no backend server yet, I've simply written the Functions' source code to randomly generate a number from 0 to 3 to simulate database records.
-
-The contract is deployed by the operator of the frontend and backend servers. At deployment, an otherStakeholdersAddress is specified, representing those who don't directly participate in operations but should receive profits, like the proposer of the AI algorithm. I've added this address as the otherStakeholdersAddress. I've provided a function for otherStakeholders to record their MetaData, adding the VGG19 model and NST algorithm paper's address as their MetaData.
-
-The contract also specifies different stakes for different roles and settings like service fees at deployment. Here, I set the operator to receive 70%, the artwork owner 20%, and others 10%.
-
-Now, let's assume someone has paid 1 ether for a style transfer. The operator can call the distributeFunds function to distribute money to everyone. In fact, I originally envisioned that artwork owners would have voting or veto rights on key decisions, like withdrawals, Chainlink Functions interactions, service fee settings, etc. Due to time constraints, I didn't fully implement this, but you can see some implementations in my GitHub repository.
-
-That's the end of the demo. This example only involves three roles: the operator, the artwork owner, and the algorithm proposer. In reality, AI technology involves many more stakeholders, like model trainers, data providers, and even the public, as many AI trainings use a lot of public data. Although this example project didn't involve complex situations, I believe my idea has been clearly expressed.

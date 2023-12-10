@@ -150,7 +150,7 @@ contract Web3NST {
         }
 
         (bool PayToOperatorContract, ) = payable(operatorPayeeAddress).call{value: operatorAmount}("");
-        if(!PayToOperator) {
+        if(!PayToOperatorContract) {
             (bool PayToOperatorOwner, ) = payable(operatorAddress).call{value: operatorAmount}("");   // 如果此处打款失败，就把款项支付到运营商地址上
         }
     }
