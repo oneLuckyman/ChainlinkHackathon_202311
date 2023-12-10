@@ -45,7 +45,7 @@
                 <h3>Step 2: Choose Style Reference</h3>
                 <p>Select a predefined style to apply to your image.</p>
                 <select id="styleReference" name="styleReference">
-                    <option value="style1">Style 1</option>
+                    <option value="style1">Style 1: Starry Night</option>
                     <option value="style2">Style 2</option>
                     <option value="style3">Style 3</option>
                     <option value="style4">Style 4</option>
@@ -123,7 +123,8 @@
         });
 
         function payWithMetaMask() {
-            const contractAddress = '0x9Bc497d0beeD394a671b73F7E5A748C83d2a9A54'; // 合约地址
+            // const contractAddress = '0x9Bc497d0beeD394a671b73F7E5A748C83d2a9A54'; // Sepolia 合约地址
+            const contractAddress = '0x0D3DF3aA2FE62b52E6Ffd15C9aB2c5aa683f122f';   // Mumbai 合约地址
             const contractABI = window.contractABI; // 合约ABI
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             const paymentAmount = web3.utils.toWei('1', 'ether'); // 设置支付金额

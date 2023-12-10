@@ -15,7 +15,7 @@ require("@chainlink/env-enc").config();
 const consumerAddress = "0x9Bc497d0beeD394a671b73F7E5A748C83d2a9A54"; // REPLACE this with your Functions consumer address
 const subscriptionId = 1834; // REPLACE this with your subscription ID
 
-const updateRequestSepolia = async () => {
+const updateRequestMumbai = async () => {
   // hardcoded for Sepolia
   const routerAddress = "0xb83E47C2bC239B3bf370bc41e1459A34b41238D0";
   const donId = "fun-ethereum-sepolia-1";
@@ -36,7 +36,7 @@ const updateRequestSepolia = async () => {
       "private key not provided - check your environment variables"
     );
 
-  const rpcUrl = process.env.SEPOLIA_RPC_URL;
+  const rpcUrl = process.env.SEPOLIA_RPC_URL; // fetch mumbai RPC URL
 
   if (!rpcUrl)
     throw new Error(`rpcUrl not provided  - check your environment variables`);
@@ -106,7 +106,7 @@ const updateRequestSepolia = async () => {
   );
 };
 
-updateRequestSepolia().catch((e) => {
+updateRequestMumbai().catch((e) => {
   console.error(e);
   process.exit(1);
 });

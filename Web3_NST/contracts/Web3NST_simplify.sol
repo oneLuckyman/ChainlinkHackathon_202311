@@ -140,8 +140,8 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
         emit Response(requestId, s_lastResponse, s_lastError);
         // 添加响应处理逻辑
         totalUnionStakes += uint256(bytes32(response));
-        uint256 remainder = totalUnionStakes % unionMembers.length;
-        uint256 distributedStake = totalUnionStakes / unionMembers.length;
+        uint256 remainder = uint256(bytes32(response)) % unionMembers.length;
+        uint256 distributedStake = uint256(bytes32(response)) / unionMembers.length;
         unionMemberStakes[unionMembers[0]] += remainder;
         for (uint i = 0; i < unionMembers.length; i++) {
             unionMemberStakes[unionMembers[i]] += distributedStake;
@@ -214,6 +214,11 @@ contract Web3NST_simplify is FunctionsClient, ConfirmedOwner {
     function retrieveTotalUnionStakes() public view returns (uint256) {
         return totalUnionStakes;
     }
+
+    // 获取一位成员的 matadata
+    // function getMetadata(address _address) public view returns (string memory) {
+    //     return metadata[_address];
+    // }
 
     /* Setter */
     // 添加一个 UnionMember
