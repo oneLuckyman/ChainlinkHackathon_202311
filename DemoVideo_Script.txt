@@ -1,3 +1,5 @@
+Due to concerns about my accent, I have provided the text of the lines I spoke in the demonstration video for reference, hoping it will be useful to you.
+
 English Version：
 Hi everyone, this video is a brief project overview for Chainlink Hacathon November 2023. Although my project isn't fully complete, I'll still explain my general idea in this video. I wanted to show through this example project how blockchain technology has great potential in solving some of the issues related to profit distribution and production relations in AI technology.
 
